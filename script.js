@@ -1,27 +1,28 @@
 /* ============================================
-   script.js — منطق الواجهة العام
+   script.js — منطق الواجهة
    ============================================ */
 
-/* ---------- عرض بطاقات الأدوات والتعريفات ---------- */
+/* ---------- حماية النصوص ---------- */
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, s => ({
     '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
   }[s]));
 }
 
+/* ---------- عرض البطاقات ---------- */
 function renderCards(gridEl, items) {
   if (!gridEl) return;
   if (!items || !items.length) {
     gridEl.innerHTML = `
       <div class="coming-soon">
         <h2>قريباً</h2>
-        <p>لا توجد عناصر بعد — سيتم إضافتها قريباً.</p>
+        <p>سيتم إضافة المحتوى قريباً.</p>
         <div class="cs-line"></div>
       </div>`;
     return;
   }
   gridEl.innerHTML = items.map(item => `
-    <article class="card" data-id="${escapeHtml(item.id || '')}">
+    <article class="card">
       <div class="card-image">
         ${item.image
           ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}" loading="lazy">`
@@ -36,27 +37,169 @@ function renderCards(gridEl, items) {
   `).join('');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  renderCards(document.getElementById('toolsGrid'), typeof TOOLS_DATA !== 'undefined' ? TOOLS_DATA : []);
-  renderCards(document.getElementById('defsGrid'),  typeof DEFS_DATA  !== 'undefined' ? DEFS_DATA  : []);
-});
-
-/* ---------- العناصر الأساسية ---------- */
-const loginModal = document.getElementById('loginModal');
-const signupModal = document.getElementById('signupModal');
-const signupModalBox = document.getElementById('signupModalBox');
-const loginBtn = document.getElementById('loginBtn');
-const signupBtn = document.getElementById('signupBtn');
-const userChip = document.getElementById('userChip');
-const userCaret = document.getElementById('userCaret');
-const userMenu = document.getElementById('userMenu');
-const userAvatar = document.getElementById('userAvatar');
-const userName = document.getElementById('userName');
-const logoutBtn = document.getElementById('logoutBtn');
-const successView = document.getElementById('successView');
-const successTimer = document.getElementById('successTimer');
+/* ---------- مراجع العناصر ---------- */
+let loginModal, signupModal, signupModalBox, loginBtn, signupBtn,
+    userChip, userCaret, userMenu, userAvatar, userName, logoutBtn,
+    successView, successTimer, toast, toastMsg;
 
 let successTimerInterval = null;
+
+/* ---------- تهيئة عند التحميل ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  // ربط العناصر
+  loginModal     = document.getElementById('loginModal');
+  signupModal    = document.getElementById('signupModal');
+  signupModalBox = document.getElementById('signupModalBox');
+  loginBtn       = document.getElementById('loginBtn');
+  signupBtn      = document.getElementById('signupBtn');
+  userChip       = document.getElementById('userChip');
+  userCaret      = document.getElementById('userCaret');
+  userMenu       = document.getElementById('userMenu');
+  userAvatar     = document.getElementById('userAvatar');
+  userName       = document.getElementById('userName');
+  logoutBtn      = document.getElementById('logoutBtn');
+  successView    = document.getElementById('successView');
+  successTimer   = document.getElementById('successTimer');
+  toast          = document.getElementById('toast');
+  toastMsg       = document.getElementById('toastMsg');
+
+  // عرض البطاقات
+  renderCards(document.getElementById('toolsGrid'), typeof TOOLS_DATA !== 'undefined' ? TOOLS_DATA : []);
+  renderCards(document.getElementById('defsGrid'),  typeof DEFS_DATA  !== 'undefined' ? DEFS_DATA  : []);
+
+  // ربط الأحداث
+  bindEvents();
+
+  // تحديث واجهة الدخول
+  updateAuthUI();
+
+  // فحص طلب معلّق
+  checkPendingOnLoad();
+});
+
+/* ---------- ربط كل الأحداث ---------- */
+function bindEvents() {
+
+  /* أزرار الدخول والتسجيل */
+  loginBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    resetLoginForm();
+    showModal('loginModal');
+  });
+
+  signupBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    resetSignupForm();
+    showModal('signupModal');
+  });
+
+  /* أزرار الإغلاق */
+  document.querySelectorAll('[data-close]').forEach(b => {
+    b.addEventListener('click', (e) => {
+      e.preventDefault();
+      hideModal(b.dataset.close);
+    });
+  });
+
+  /* النقر على الخلفية */
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.addEventListener('click', e => {
+      if (e.target === m) hideModal(m.id);
+    });
+  });
+
+  /* ESC */
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      hideAllModals();
+      closeUserMenu();
+      document.getElementById('dropdown').classList.remove('open');
+    }
+  });
+
+  /* التبديل بين النوافذ */
+  document.getElementById('switchToSignup').addEventListener('click', () => {
+    hideModal('loginModal');
+    resetSignupForm();
+    setTimeout(() => showModal('signupModal'), 150);
+  });
+  document.getElementById('switchToLogin').addEventListener('click', () => {
+    hideModal('signupModal');
+    resetLoginForm();
+    setTimeout(() => showModal('loginModal'), 150);
+  });
+
+  /* إظهار/إخفاء كلمة السر */
+  document.querySelectorAll('.toggle-pass').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const inp = document.getElementById(btn.dataset.target);
+      const isPass = inp.type === 'password';
+      inp.type = isPass ? 'text' : 'password';
+      btn.innerHTML = isPass
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    });
+  });
+
+  /* نموذج التسجيل */
+  document.getElementById('signupForm').addEventListener('submit', handleSignup);
+
+  /* نموذج الدخول */
+  document.getElementById('loginForm').addEventListener('submit', handleLogin);
+
+  /* قائمة المستخدم */
+  userCaret.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = userMenu.classList.toggle('open');
+    userChip.classList.toggle('open', open);
+  });
+  userChip.addEventListener('click', e => {
+    if (e.target.closest('.logout-btn')) return;
+    if (e.target === userCaret || userCaret.contains(e.target)) return;
+    e.stopPropagation();
+    const open = userMenu.classList.toggle('open');
+    userChip.classList.toggle('open', open);
+  });
+  document.addEventListener('click', e => {
+    if (!userChip.contains(e.target)) closeUserMenu();
+    const mw = document.querySelector('.menu-wrap');
+    if (mw && !mw.contains(e.target)) document.getElementById('dropdown').classList.remove('open');
+  });
+
+  /* تسجيل الخروج */
+  logoutBtn.addEventListener('click', () => {
+    clearSession();
+    clearSessionCookie();
+    updateAuthUI();
+    closeUserMenu();
+    showToast('تم تسجيل الخروج بنجاح', 'success');
+  });
+
+  /* التبويبات */
+  const tabs = document.querySelectorAll('.tab');
+  const panels = {
+    tools:   document.getElementById('panel-tools'),
+    defs:    document.getElementById('panel-defs'),
+    youtube: document.getElementById('panel-youtube'),
+  };
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      Object.values(panels).forEach(p => p.classList.remove('active'));
+      panels[tab.dataset.panel].classList.add('active');
+    });
+  });
+
+  /* قائمة المطور */
+  const menuBtn = document.getElementById('menuBtn');
+  const dropdown = document.getElementById('dropdown');
+  menuBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    closeUserMenu();
+    dropdown.classList.toggle('open');
+  });
+}
 
 /* ---------- النوافذ ---------- */
 function showModal(which) {
@@ -69,7 +212,8 @@ function hideModal(which) {
   document.getElementById(which).classList.remove('open');
   if (!document.querySelector('.modal-overlay.open')) document.body.style.overflow = '';
   if (which === 'signupModal' && successTimerInterval) {
-    clearInterval(successTimerInterval); successTimerInterval = null;
+    clearInterval(successTimerInterval);
+    successTimerInterval = null;
   }
 }
 function hideAllModals() {
@@ -78,39 +222,7 @@ function hideAllModals() {
   if (successTimerInterval) { clearInterval(successTimerInterval); successTimerInterval = null; }
 }
 
-loginBtn.addEventListener('click', () => { resetLoginForm(); showModal('loginModal'); });
-signupBtn.addEventListener('click', () => { resetSignupForm(); showModal('signupModal'); });
-
-document.querySelectorAll('[data-close]').forEach(b => {
-  b.addEventListener('click', e => { e.preventDefault(); hideModal(b.dataset.close); });
-});
-document.querySelectorAll('.modal-overlay').forEach(m => {
-  m.addEventListener('click', e => { if (e.target === m) hideModal(m.id); });
-});
-document.addEventListener('keydown', e => { if (e.key === 'Escape') hideAllModals(); });
-
-document.getElementById('switchToSignup').addEventListener('click', () => {
-  hideModal('loginModal'); resetSignupForm();
-  setTimeout(() => showModal('signupModal'), 150);
-});
-document.getElementById('switchToLogin').addEventListener('click', () => {
-  hideModal('signupModal'); resetLoginForm();
-  setTimeout(() => showModal('loginModal'), 150);
-});
-
-/* ---------- إظهار/إخفاء كلمة السر ---------- */
-document.querySelectorAll('.toggle-pass').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const inp = document.getElementById(btn.dataset.target);
-    const isPass = inp.type === 'password';
-    inp.type = isPass ? 'text' : 'password';
-    btn.innerHTML = isPass
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
-  });
-});
-
-/* ---------- رسائل النماذج ---------- */
+/* ---------- رسائل ---------- */
 function showMsg(el, txtEl, text, type) {
   el.classList.remove('error', 'success', 'info');
   el.classList.add('show', type);
@@ -132,8 +244,10 @@ function resetSignupForm() {
   if (successTimerInterval) { clearInterval(successTimerInterval); successTimerInterval = null; }
 }
 
-/* ---------- تسجيل حساب جديد ---------- */
-document.getElementById('signupForm').addEventListener('submit', async e => {
+/* ============================================
+   نموذج التسجيل — يرسل للتلجرام فقط
+   ============================================ */
+async function handleSignup(e) {
   e.preventDefault();
   const msg = document.getElementById('signupMsg');
   const txt = document.getElementById('signupMsgText');
@@ -151,12 +265,12 @@ document.getElementById('signupForm').addEventListener('submit', async e => {
 
   const key = user.toLowerCase();
 
-  /* ✅ التحقق من سجل الحسابات (الأسماء المستخدمة) */
+  /* ✅ تحقق من قائمة المستخدمين التي أضفتها يدوياً */
   if (isUsernameTaken(key)) {
     return showMsg(msg, txt, '⚠️ اسم المستخدم هذا مستخدم بالفعل — اختر اسمًا آخر', 'error');
   }
 
-  /* ✅ التحقق من الطلبات المعلّقة */
+  /* ✅ تحقق من الطلبات المعلقة */
   const pending = getPending();
   if (pending[key] && pending[key].status === 'pending') {
     return showMsg(msg, txt, 'لديك طلب قيد المراجعة بالفعل — يرجى الانتظار', 'info');
@@ -167,9 +281,10 @@ document.getElementById('signupForm').addEventListener('submit', async e => {
   hideMsg(msg);
 
   try {
+    /* إرسال للتلجرام فقط */
     await sendToTelegram(name, user, pass);
 
-    /* تخزين الطلب المعلّق */
+    /* تخزين الطلب المعلّق (محلياً فقط لعرض العد التنازلي) */
     pending[key] = {
       name, user,
       pass: hashPass(pass),
@@ -178,21 +293,13 @@ document.getElementById('signupForm').addEventListener('submit', async e => {
       activateAt: Date.now() + 24 * 60 * 60 * 1000
     };
     savePending(pending);
-
-    /* تسجيل في سجل الحسابات فورًا (لمنع تكرار الاسم) */
-    registerAccount(key, {
-      name,
-      user,
-      pass: hashPass(pass),
-      status: 'pending',
-      createdAt: pending[key].createdAt
-    });
-
     rememberPendingUser(key);
 
+    /* عرض رسالة النجاح + العد التنازلي */
     signupModalBox.classList.add('showing-success');
     successView.classList.add('show');
     startSuccessTimer(pending[key].activateAt);
+
   } catch (err) {
     console.error(err);
     showMsg(msg, txt, 'تعذّر إرسال الطلب — تحقق من الاتصال وحاول مرة أخرى', 'error');
@@ -200,10 +307,12 @@ document.getElementById('signupForm').addEventListener('submit', async e => {
     submitBtn.classList.remove('loading');
     submitBtn.disabled = false;
   }
-});
+}
 
-/* ---------- تسجيل الدخول ---------- */
-document.getElementById('loginForm').addEventListener('submit', e => {
+/* ============================================
+   نموذج الدخول — يتحقق من USERS
+   ============================================ */
+function handleLogin(e) {
   e.preventDefault();
   const msg = document.getElementById('loginMsg');
   const txt = document.getElementById('loginMsgText');
@@ -213,35 +322,27 @@ document.getElementById('loginForm').addEventListener('submit', e => {
   if (!user || !pass) return showMsg(msg, txt, 'يرجى إدخال اسم المستخدم وكلمة السر', 'error');
 
   const key = user.toLowerCase();
-  const pending = getPending();
-  const accounts = getAccounts();
+  const entry = getUser(key);
 
-  const entry = pending[key] || accounts[key];
-
+  /* الحساب غير موجود في USERS */
   if (!entry) {
-    return showMsg(msg, txt, 'لا يوجد حساب بهذا الاسم — يرجى إنشاء حساب أولاً', 'error');
-  }
-  if (entry.pass !== hashPass(pass)) {
-    return showMsg(msg, txt, 'كلمة السر غير صحيحة', 'error');
-  }
-
-  if (entry.status === 'pending') {
-    const remaining = (entry.activateAt || 0) - Date.now();
-    if (remaining > 0) {
-      const hrs = Math.floor(remaining / 3600000);
-      const mins = Math.floor((remaining % 3600000) / 60000);
+    /* هل هو طلب معلّق؟ */
+    const pending = getPending();
+    if (pending[key]) {
       return showMsg(msg, txt,
-        'حسابك قيد المراجعة — يمكنك تسجيل الدخول بعد ' +
-        (hrs > 0 ? hrs + ' ساعة و' : '') + mins + ' دقيقة',
+        '⏳ حسابك قيد المراجعة — سيتم تفعيله قريباً. حاول لاحقاً.',
         'info');
     }
-    /* تفعيل تلقائي بعد انتهاء المدة */
-    if (pending[key]) { pending[key].status = 'active'; savePending(pending); }
-    if (accounts[key]) { accounts[key].status = 'active'; saveAccounts(accounts); }
-    entry.status = 'active';
+    return showMsg(msg, txt, '❌ لا يوجد حساب بهذا الاسم — يرجى إنشاء حساب أولاً', 'error');
   }
 
-  showMsg(msg, txt, 'تم تسجيل الدخول بنجاح!', 'success');
+  /* كلمة السر */
+  if (entry.pass !== hashPass(pass)) {
+    return showMsg(msg, txt, '❌ كلمة السر غير صحيحة', 'error');
+  }
+
+  /* نجاح */
+  showMsg(msg, txt, '✅ تم تسجيل الدخول بنجاح!', 'success');
   setTimeout(() => {
     setSession(key);
     setSessionCookie(key);
@@ -249,16 +350,17 @@ document.getElementById('loginForm').addEventListener('submit', e => {
     hideModal('loginModal');
     showToast('مرحباً بعودتك ' + entry.name, 'success');
   }, 600);
-});
+}
 
-/* ---------- المؤقت ---------- */
+/* ---------- مؤقت العرض ---------- */
 function startSuccessTimer(activateAt) {
   if (successTimerInterval) clearInterval(successTimerInterval);
   function tick() {
     const remaining = activateAt - Date.now();
     if (remaining <= 0) {
-      successTimer.textContent = 'جاهز للدخول ✓';
-      clearInterval(successTimerInterval); successTimerInterval = null;
+      successTimer.textContent = 'بانتظار التفعيل';
+      clearInterval(successTimerInterval);
+      successTimerInterval = null;
       return;
     }
     const t = Math.floor(remaining / 1000);
@@ -276,43 +378,13 @@ function closeUserMenu() {
   userMenu.classList.remove('open');
   userChip.classList.remove('open');
 }
-userCaret.addEventListener('click', e => {
-  e.stopPropagation();
-  const open = userMenu.classList.toggle('open');
-  userChip.classList.toggle('open', open);
-});
-userChip.addEventListener('click', e => {
-  if (e.target.closest('.logout-btn')) return;
-  if (e.target === userCaret || userCaret.contains(e.target)) return;
-  e.stopPropagation();
-  const open = userMenu.classList.toggle('open');
-  userChip.classList.toggle('open', open);
-});
-document.addEventListener('click', e => {
-  if (!userChip.contains(e.target)) closeUserMenu();
-  const mw = document.querySelector('.menu-wrap');
-  if (mw && !mw.contains(e.target)) document.getElementById('dropdown').classList.remove('open');
-});
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    closeUserMenu();
-    document.getElementById('dropdown').classList.remove('open');
-  }
-});
 
-logoutBtn.addEventListener('click', () => {
-  clearSession(); clearSessionCookie();
-  updateAuthUI(); closeUserMenu();
-  showToast('تم تسجيل الخروج بنجاح', 'success');
-});
-
+/* ---------- تحديث الواجهة ---------- */
 function updateAuthUI() {
   const session = getPersistentSession();
-  const pending = getPending();
-  const accounts = getAccounts();
-  const account = session ? (accounts[session] || pending[session]) : null;
+  const account = session ? getUser(session) : null;
 
-  if (account && account.status === 'active') {
+  if (account) {
     loginBtn.style.display = 'none';
     signupBtn.style.display = 'none';
     userChip.classList.add('show');
@@ -321,7 +393,10 @@ function updateAuthUI() {
     document.getElementById('umName').textContent = account.name;
     document.getElementById('umUser').textContent = account.user;
   } else {
-    if (session && !account) { clearSession(); clearSessionCookie(); }
+    if (session && !account) {
+      clearSession();
+      clearSessionCookie();
+    }
     loginBtn.style.display = '';
     signupBtn.style.display = '';
     userChip.classList.remove('show');
@@ -330,34 +405,7 @@ function updateAuthUI() {
   }
 }
 
-/* ---------- التبويبات ---------- */
-const tabs = document.querySelectorAll('.tab');
-const panels = {
-  tools:   document.getElementById('panel-tools'),
-  defs:    document.getElementById('panel-defs'),
-  youtube: document.getElementById('panel-youtube'),
-};
-tabs.forEach(tab => {
-  tab.addEventListener('click', () => {
-    tabs.forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    Object.values(panels).forEach(p => p.classList.remove('active'));
-    panels[tab.dataset.panel].classList.add('active');
-  });
-});
-
-/* ---------- قائمة المطور ---------- */
-const menuBtn = document.getElementById('menuBtn');
-const dropdown = document.getElementById('dropdown');
-menuBtn.addEventListener('click', e => {
-  e.stopPropagation();
-  closeUserMenu();
-  dropdown.classList.toggle('open');
-});
-
 /* ---------- Toast ---------- */
-const toast = document.getElementById('toast');
-const toastMsg = document.getElementById('toastMsg');
 let toastTimer;
 function showToast(msg, type = 'info') {
   toastMsg.textContent = msg;
@@ -370,22 +418,15 @@ function showToast(msg, type = 'info') {
 }
 
 /* ---------- فحص عند التحميل ---------- */
-(function checkPendingOnLoad() {
-  updateAuthUI();
-
+function checkPendingOnLoad() {
   const session = getPersistentSession();
-  if (session) {
-    const accounts = getAccounts();
-    const pending = getPending();
-    const acc = accounts[session] || pending[session];
-    if (acc && acc.status === 'active') return;
-  }
+  if (session && getUser(session)) return;
 
   const pending = getPending();
   const remembered = getRememberedPendingUser();
   let entry = null, key = null;
 
-  if (remembered && pending[remembered]) {
+  if (remembered && pending[remembered] && pending[remembered].status === 'pending') {
     entry = pending[remembered]; key = remembered;
   } else {
     for (const k in pending) {
@@ -393,7 +434,7 @@ function showToast(msg, type = 'info') {
     }
   }
 
-  if (entry && entry.status === 'pending' && !session) {
+  if (entry) {
     resetSignupForm();
     showModal('signupModal');
     signupModalBox.classList.add('showing-success');
@@ -401,4 +442,4 @@ function showToast(msg, type = 'info') {
     startSuccessTimer(entry.activateAt);
     rememberPendingUser(key);
   }
-})();
+}
