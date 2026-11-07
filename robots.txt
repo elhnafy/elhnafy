@@ -1,2 +1,9 @@
 User-agent: *
-Disallow: /adminn.html
+Disallow: /admin.html
+Disallow: /admin.php
+Disallow: /admin/
+Disallow: /accounts.js
+Disallow: /data.js
+Disallow: /messages.js
+
+Sitemap: https://username.github.io/elhnafy/sitemap.xml

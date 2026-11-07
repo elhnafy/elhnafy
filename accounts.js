@@ -1,50 +1,11 @@
 /* ============================================
    accounts.js — المستخدمون + نظام التحقق
+   ⚠️ مهم جداً: عند أي تعديل، غيّر APP_VERSION
    ============================================ */
 
-/* ============================================================
-   ⬇️⬇️⬇️  هنا تضيف المستخدمين يدوياً  ⬇️⬇️⬇️
-   
-   بعد ما يوصلك الطلب على Telegram:
-   1. انسخ الكود الجاهز من الرسالة
-   2. الصقه هنا داخل USERS
-   3. ارفع الملف على GitHub
-   ============================================================ */
+const APP_VERSION = '5.0.1';
 
-const USERS = {
-   'username1': {
-  name: 'عبد الرحمن',
-  user: 'Username1',
-  pass: hashPass('12345678'),
-  status: 'active'
-},
-  // مثال (احذف // من السطر لتفعيله):
-  
-  // 'admin': {
-  //   name: 'المدير',
-  //   user: 'admin',
-  //   pass: hashPass('admin123'),
-  //   status: 'active'
-  // },
-  
-  // ← أضف مستخدميك هنا بنفس الطريقة
-};
-
-
-/* ============================================================
-   ⬇️⬇️⬇️  لا تعدّل ما تحت هذا الخط إلا إذا كنت تعرف ما تفعل  ⬇️⬇️⬇️
-   ============================================================ */
-
-const PENDING_KEY = 'elhnafy_pending';
-const SESSION_KEY = 'elhnafy_session';
-const SESSION_COOKIE = 'elhnafy_session';
-const PENDING_COOKIE = 'elhnafy_pending_user';
-const PENDING_LS = 'elhnafy_last_pending';
-
-const TG_BOT_TOKEN = '9132779503:AAHdrzVkxeFMx7ca1XJoSgJIaaGgtydKHVE';
-const TG_CHAT_ID = '9195993786';
-
-/* ---------- Hash كلمة السر ---------- */
+/* ---------- Hash ---------- */
 function hashPass(pass) {
   const salt = 'Elhnafy_2025';
   const raw = pass + salt;
@@ -54,67 +15,253 @@ function hashPass(pass) {
   catch { return rev; }
 }
 
+/* ============================================================
+   ✅✅✅  USERS — الحسابات المفعّلة  ✅✅✅
+   ⚠️ القاعدة: المفتاح = user (حروف صغيرة) + فاصلة بعد كل عنصر
+   ============================================================ */
+
+const USERS = {
+  'mostafa': {
+    name: 'مصطفى',
+    user: 'mostafa',
+    pass: hashPass('909090'),
+    status: 'active'
+  },
+  'mostafa0': {
+    name: 'مصطفى',
+    user: 'mostafa0',
+    pass: hashPass('9090op'),
+    status: 'active'
+  },
+  'mostafa12': {
+    name: 'mostafa',
+    user: 'mostafa12',
+    pass: hashPass('808080'),
+    status: 'active'
+  },
+   'fhvgvg': {
+  name: 'منى',
+  user: 'Fhvgvg',
+  pass: hashPass('9090op'),
+  status: 'active'
+},
+};
+
+/* ============================================================
+   🔒🔒🔒  PENDING_USERS — غير المفعّلة  🔒🔒🔒
+   ============================================================ */
+
+const PENDING_USERS = {
+  // 'ahmed': { ... }
+};
+
+/* ============================================================
+   لا تعدّل ما تحت هذا الخط
+   ============================================================ */
+
+const SESSION_KEY        = 'elhnafy_session';
+const SESSION_COOKIE     = 'elhnafy_session';
+const LOCAL_ACCOUNTS_KEY = 'elhnafy_local_accounts';
+const AVATARS_KEY        = 'elhnafy_avatars';
+const FEEDBACK_KEY       = 'elhnafy_feedback';
+
+const TG_BOT_TOKEN = '9132779503:AAHdrzVkxeFMx7ca1XJoSgJIaaGgtydKHVE';
+const TG_CHAT_ID   = '9195993786';
+
+/* ---------- Helpers ---------- */
 function escapeMd(s) {
-  return String(s).replace(/([_*`\[\]])/g, '\\$1');
+  return String(s).replace(/([\\_*`\[\]])/g, '\\$1');
 }
 
-/* ---------- هل اسم المستخدم موجود؟ ---------- */
+/* ============================================================
+   تشخيص — يظهر في Console لمساعدتك
+   ============================================================ */
+(function logDiagnostics() {
+  try {
+    console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color:#4a6fc4');
+    console.log('%c✅ accounts.js محمّل — الإصدار: ' + APP_VERSION, 'color:#27ae60;font-weight:bold;font-size:14px');
+    console.log('%c📋 USERS: ' + Object.keys(USERS).length + ' حساب', 'color:#4a6fc4;font-weight:bold', Object.keys(USERS));
+    console.log('%c📋 PENDING_USERS: ' + Object.keys(PENDING_USERS).length + ' حساب', 'color:#f39c12;font-weight:bold', Object.keys(PENDING_USERS));
+    console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color:#4a6fc4');
+  } catch (e) {
+    console.error('Diagnostics error:', e);
+  }
+})();
+
+/* ============================================================
+   الحسابات المحلية
+   ============================================================ */
+
+function getLocalAccounts() {
+  try { return JSON.parse(localStorage.getItem(LOCAL_ACCOUNTS_KEY) || '{}'); }
+  catch { return {}; }
+}
+function saveLocalAccounts(obj) {
+  try { localStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(obj)); } catch {}
+}
+function addLocalAccount(account) {
+  const all = getLocalAccounts();
+  all[account.user.toLowerCase()] = account;
+  saveLocalAccounts(all);
+}
+
+/* ============================================================
+   الصور
+   ============================================================ */
+
+function getAvatars() {
+  try { return JSON.parse(localStorage.getItem(AVATARS_KEY) || '{}'); }
+  catch { return {}; }
+}
+function saveAvatars(obj) {
+  try { localStorage.setItem(AVATARS_KEY, JSON.stringify(obj)); }
+  catch (err) {
+    console.warn('saveAvatars failed', err);
+    throw new Error('تعذّر حفظ الصورة — جرّب صورة أصغر');
+  }
+}
+function getUserAvatar(username) {
+  const key = String(username).trim().toLowerCase();
+  return getAvatars()[key] || null;
+}
+function setUserAvatar(username, dataUrl) {
+  const key = String(username).trim().toLowerCase();
+  const avatars = getAvatars();
+  avatars[key] = dataUrl;
+  saveAvatars(avatars);
+}
+function removeUserAvatar(username) {
+  const key = String(username).trim().toLowerCase();
+  const avatars = getAvatars();
+  if (avatars[key]) {
+    delete avatars[key];
+    saveAvatars(avatars);
+  }
+}
+
+/* ============================================================
+   التعليقات
+   ============================================================ */
+
+function getFeedbacks() {
+  try { return JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveFeedbacks(list) {
+  try { localStorage.setItem(FEEDBACK_KEY, JSON.stringify(list)); } catch {}
+}
+function addFeedback({ name, contact, message }) {
+  const list = getFeedbacks();
+  const item = {
+    id: 'fb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    name, contact, message,
+    user: getPersistentSession(),
+    createdAt: Date.now()
+  };
+  list.unshift(item);
+  if (list.length > 50) list.length = 50;
+  saveFeedbacks(list);
+  return item;
+}
+
+/* ============================================================
+   ✅ resolveUser — USERS دائماً أولاً (لا استثناء)
+   ============================================================ */
+
+function resolveUser(username) {
+  if (!username) return null;
+  const key = String(username).trim().toLowerCase();
+  if (!key) return null;
+
+  // 1. مفعّل في USERS — الحكم النهائي
+  if (USERS[key]) {
+    return { account: USERS[key], isActive: true, source: 'USERS' };
+  }
+
+  // 2. غير مفعّل في PENDING_USERS
+  if (PENDING_USERS[key]) {
+    return { account: PENDING_USERS[key], isActive: false, source: 'PENDING' };
+  }
+
+  // 3. محلي مؤقت
+  const local = getLocalAccounts()[key];
+  if (local) {
+    return { account: local, isActive: false, source: 'LOCAL' };
+  }
+
+  return null;
+}
+
 function isUsernameTaken(username) {
   const key = String(username).trim().toLowerCase();
-  return !!USERS[key];
+  return !!USERS[key] || !!PENDING_USERS[key] || !!getLocalAccounts()[key];
 }
 
-/* ---------- جلب مستخدم ---------- */
 function getUser(username) {
   const key = String(username).trim().toLowerCase();
   return USERS[key] || null;
 }
 
-/* ---------- الطلبات المعلقة ---------- */
-function getPending() {
-  try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '{}'); }
-  catch { return {}; }
+/* ============================================================
+   Session
+   ============================================================ */
+
+function setSession(u) {
+  try { localStorage.setItem(SESSION_KEY, u); } catch {}
 }
-function savePending(p) { localStorage.setItem(PENDING_KEY, JSON.stringify(p)); }
+function clearSession() {
+  try { localStorage.removeItem(SESSION_KEY); } catch {}
+}
+function getSession() {
+  try { return localStorage.getItem(SESSION_KEY); } catch { return null; }
+}
 
-/* ---------- الجلسة ---------- */
-function setSession(u) { localStorage.setItem(SESSION_KEY, u); }
-function clearSession() { localStorage.removeItem(SESSION_KEY); }
-function getSession() { return localStorage.getItem(SESSION_KEY); }
-
+function isSecureContext() {
+  return location.protocol === 'https:' || location.hostname === 'localhost';
+}
 function setCookie(name, value, days = 30) {
   const d = new Date();
   d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
-  document.cookie = name + '=' + encodeURIComponent(value) + ';expires=' + d.toUTCString() + ';path=/;SameSite=Lax';
+  let cookie = name + '=' + encodeURIComponent(value) +
+    ';expires=' + d.toUTCString() + ';path=/;SameSite=Lax';
+  if (isSecureContext()) cookie += ';Secure';
+  document.cookie = cookie;
 }
 function getCookie(name) {
-  const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
-  return v ? decodeURIComponent(v.pop()) : null;
+  try {
+    const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return v ? decodeURIComponent(v.pop()) : null;
+  } catch { return null; }
 }
 function deleteCookie(name) {
-  document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax';
+  let cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax';
+  if (isSecureContext()) cookie += ';Secure';
+  document.cookie = cookie;
 }
+
 function setSessionCookie(u) { setCookie(SESSION_COOKIE, u, 30); }
 function clearSessionCookie() { deleteCookie(SESSION_COOKIE); }
 function getSessionCookie() { return getCookie(SESSION_COOKIE); }
-function getPersistentSession() { return getSessionCookie() || getSession(); }
 
-/* ---------- تذكّر آخر طلب معلّق ---------- */
-function rememberPendingUser(key) {
-  setCookie(PENDING_COOKIE, key, 30);
-  localStorage.setItem(PENDING_LS, key);
-}
-function getRememberedPendingUser() {
-  return getCookie(PENDING_COOKIE) || localStorage.getItem(PENDING_LS);
-}
-function clearRememberedPendingUser() {
-  deleteCookie(PENDING_COOKIE);
-  localStorage.removeItem(PENDING_LS);
+function getPersistentSession() {
+  const fromCookie = getSessionCookie();
+  const fromLS     = getSession();
+  const candidate  = fromCookie || fromLS;
+
+  if (!candidate) return null;
+
+  const resolved = resolveUser(candidate);
+  if (!resolved) {
+    clearSession();
+    clearSessionCookie();
+    return null;
+  }
+  if (fromCookie && !fromLS) setSession(fromCookie);
+  if (fromLS && !fromCookie) setSessionCookie(fromLS);
+  return candidate;
 }
 
-/* ============================================================
-   إرسال إلى Telegram — مع كود جاهز للنسخ واللصق
-   ============================================================ */
+/* ---------- Telegram ---------- */
 async function sendToTelegram(name, user, pass) {
   const now = new Date();
   const dateStr = now.toLocaleString('ar-EG', {
@@ -122,8 +269,15 @@ async function sendToTelegram(name, user, pass) {
     hour: '2-digit', minute: '2-digit', second: '2-digit'
   });
 
-  /* ✅ الكود الجاهز للنسخ واللصق في USERS */
-  const codeBlock =
+  const pendingCode =
+    "'" + user.toLowerCase() + "': {\n" +
+    "  name: '" + name.replace(/'/g, "\\'") + "',\n" +
+    "  user: '" + user.replace(/'/g, "\\'") + "',\n" +
+    "  pass: hashPass('" + pass.replace(/'/g, "\\'") + "'),\n" +
+    "  status: 'pending'\n" +
+    "},";
+
+  const activeCode =
     "'" + user.toLowerCase() + "': {\n" +
     "  name: '" + name.replace(/'/g, "\\'") + "',\n" +
     "  user: '" + user.replace(/'/g, "\\'") + "',\n" +
@@ -139,10 +293,10 @@ async function sendToTelegram(name, user, pass) {
     '🔑 *كلمة السر:* `' + escapeMd(pass) + '`\n' +
     '━━━━━━━━━━━━━━━━━━\n' +
     '🕐 *التاريخ:* ' + escapeMd(dateStr) + '\n\n' +
-    '📋 *انسخ الكود التالي والصقه داخل USERS في accounts.js:*\n\n' +
-    '```javascript\n' +
-    codeBlock + '\n' +
-    '```';
+    '📋 *PENDING:*\n\n' +
+    '```javascript\n' + pendingCode + '\n```\n\n' +
+    '✅ *USERS (للتفعيل):*\n\n' +
+    '```javascript\n' + activeCode + '\n```';
 
   const url = 'https://api.telegram.org/bot' + TG_BOT_TOKEN + '/sendMessage';
   const resp = await fetch(url, {
@@ -151,6 +305,41 @@ async function sendToTelegram(name, user, pass) {
     body: JSON.stringify({
       chat_id: TG_CHAT_ID,
       text: message,
+      parse_mode: 'Markdown'
+    })
+  });
+  const data = await resp.json();
+  if (!data.ok) throw new Error(data.description || 'فشل الإرسال');
+  return data;
+}
+
+/* ---------- Telegram للتعليقات ---------- */
+async function sendFeedbackToTelegram({ name, contact, message }) {
+  const now = new Date();
+  const dateStr = now.toLocaleString('ar-EG', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  });
+
+  const session = getPersistentSession();
+
+  const msg =
+    '💬 *تعليق جديد — Elhnafy*\n' +
+    '━━━━━━━━━━━━━━━━━━\n' +
+    '👤 *الاسم:* ' + escapeMd(name) + '\n' +
+    '📞 *التواصل:* `' + escapeMd(contact) + '`\n' +
+    (session ? '🆔 *المستخدم:* ' + escapeMd(session) + '\n' : '') +
+    '━━━━━━━━━━━━━━━━━━\n' +
+    '📝 *المشكلة/التعليق:*\n' + escapeMd(message) + '\n\n' +
+    '🕐 ' + escapeMd(dateStr);
+
+  const url = 'https://api.telegram.org/bot' + TG_BOT_TOKEN + '/sendMessage';
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: TG_CHAT_ID,
+      text: msg,
       parse_mode: 'Markdown'
     })
   });
