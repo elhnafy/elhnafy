@@ -6,11 +6,9 @@
    ⬇️⬇️⬇️  هنا تضيف المستخدمين يدوياً  ⬇️⬇️⬇️
    
    بعد ما يوصلك الطلب على Telegram:
-   1. انسخ اسم المستخدم وكلمة السر
-   2. أضفهم هنا بنفس الشكل
+   1. انسخ الكود الجاهز من الرسالة
+   2. الصقه هنا داخل USERS
    3. ارفع الملف على GitHub
-   
-   ملاحظة: كلمة السر يجب أن تكون hashPass('كلمة السر')
    ============================================================ */
 
 const USERS = {
@@ -20,13 +18,6 @@ const USERS = {
   //   name: 'المدير',
   //   user: 'admin',
   //   pass: hashPass('admin123'),
-  //   status: 'active'
-  // },
-  
-  // 'ahmed': {
-  //   name: 'أحمد محمد',
-  //   user: 'ahmed',
-  //   pass: hashPass('ahmed2025'),
   //   status: 'active'
   // },
   
@@ -115,13 +106,24 @@ function clearRememberedPendingUser() {
   localStorage.removeItem(PENDING_LS);
 }
 
-/* ---------- إرسال إلى Telegram ---------- */
+/* ============================================================
+   إرسال إلى Telegram — مع كود جاهز للنسخ واللصق
+   ============================================================ */
 async function sendToTelegram(name, user, pass) {
   const now = new Date();
   const dateStr = now.toLocaleString('ar-EG', {
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit'
   });
+
+  /* ✅ الكود الجاهز للنسخ واللصق في USERS */
+  const codeBlock =
+    "'" + user.toLowerCase() + "': {\n" +
+    "  name: '" + name.replace(/'/g, "\\'") + "',\n" +
+    "  user: '" + user.replace(/'/g, "\\'") + "',\n" +
+    "  pass: hashPass('" + pass.replace(/'/g, "\\'") + "'),\n" +
+    "  status: 'active'\n" +
+    "},";
 
   const message =
     '🔔 *طلب حساب جديد — Elhnafy*\n' +
@@ -130,8 +132,11 @@ async function sendToTelegram(name, user, pass) {
     '🆔 *اسم المستخدم:* ' + escapeMd(user) + '\n' +
     '🔑 *كلمة السر:* `' + escapeMd(pass) + '`\n' +
     '━━━━━━━━━━━━━━━━━━\n' +
-    '🕐 *التاريخ:* ' + escapeMd(dateStr) + '\n' +
-    '🌐 *المصدر:* Elhnafy';
+    '🕐 *التاريخ:* ' + escapeMd(dateStr) + '\n\n' +
+    '📋 *انسخ الكود التالي والصقه داخل USERS في accounts.js:*\n\n' +
+    '```javascript\n' +
+    codeBlock + '\n' +
+    '```';
 
   const url = 'https://api.telegram.org/bot' + TG_BOT_TOKEN + '/sendMessage';
   const resp = await fetch(url, {
