@@ -3,7 +3,7 @@
    ⚠️ مهم جداً: عند أي تعديل، غيّر APP_VERSION
    ============================================ */
 
-const APP_VERSION = '2';
+const APP_VERSION = '1';
 
 /* ---------- Hash ---------- */
 function hashPass(pass) {
@@ -21,42 +21,6 @@ function hashPass(pass) {
    ============================================================ */
 
 const USERS = {
-  'mostafa': {
-    name: 'مصطفى',
-    user: 'mostafa',
-    pass: hashPass('909090'),
-    status: 'active'
-  },
-  'mostafa0': {
-    name: 'مصطفى',
-    user: 'mostafa0',
-    pass: hashPass('9090op'),
-    status: 'active'
-  },
-  'mostafa12': {
-    name: 'mostafa',
-    user: 'mostafa12',
-    pass: hashPass('808080'),
-    status: 'active'
-  },
-   'fhvgvg': {
-  name: 'منى',
-  user: 'Fhvgvg',
-  pass: hashPass('9090op'),
-  status: 'active'
-},
-   'username1': {
-  name: 'Vann',
-  user: 'Username1',
-  pass: hashPass('zzzzzzzz'),
-  status: 'active'
-},
-   'mohamed': {
-  name: 'محمد',
-  user: 'Mohamed',
-  pass: hashPass('123456'),
-  status: 'active'
-},
 };
 
 /* ============================================================
