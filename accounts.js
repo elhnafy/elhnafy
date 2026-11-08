@@ -51,6 +51,12 @@ const USERS = {
   pass: hashPass('zzzzzzzz'),
   status: 'active'
 },
+   'mohamed': {
+  name: 'محمد',
+  user: 'Mohamed',
+  pass: hashPass('123456'),
+  status: 'active'
+},
 };
 
 /* ============================================================
