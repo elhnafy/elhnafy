@@ -3,6 +3,13 @@
    ============================================ */
 
 const TOOLS_DATA = [
+     {
+    id: 'tool-1794151532860',
+    name: 'Haafedk',
+    description: 'ادات عمل فورمات',
+    image: 'H.png',
+    link: 'https://mega.nz/file/y3hQ3SBZ#1_Tjt6BPDPAMTjXuSGLwAhJGF-c-7OaAqLeQnKaHkPo'
+  },
   // ← أضف أدواتك هنا
 ];
 
