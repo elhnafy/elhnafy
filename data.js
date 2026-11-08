@@ -10,6 +10,13 @@ const TOOLS_DATA = [
     image: 'H.png',
     link: 'https://mega.nz/file/y3hQ3SBZ#1_Tjt6BPDPAMTjXuSGLwAhJGF-c-7OaAqLeQnKaHkPo'
   },
+     {
+    id: 'tool-1794151794883',
+    name: 'A.N.TOOL',
+    description: 'اداه سوفت وير',
+    image: 'A.png',
+    link: 'https://mega.nz/file/fzhGQaaD#1kVzGWeYX7JS_IH4y6Q4i0H4TU1SFrWz0oWXhk5mw0c'
+  },
   // ← أضف أدواتك هنا
 ];
 
