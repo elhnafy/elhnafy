@@ -12,14 +12,14 @@ const DEFS_DATA = [
     name: 'USB-Samsung',
     description: 'تعريفات اجهزة سامسونج',
     image: 's.png',
-    link: '#'
+    link: 'https://mega.nz/file/32ACAQAZ#8a-Kc1WMTNLGK6GG6PUuL1Ajxko4dw8bYjlVyXlfIhk'
   },
      {
     id: 'def-1794143154731',
     name: 'Qualcomm',
     description: 'تعريفات معالجات كوالكم',
     image: 'Q.png',
-    link: '#'
+    link: 'https://mega.nz/file/HvR2SDLC#n9OUeU-Y7SSjLHi3THo1FA5Vs-9ZaQdI96LaWZ8lKJU'
   },
   // ← أضف تعريفاتك هنا
 ];
