@@ -27,6 +27,12 @@ const USERS = {
   pass: hashPass('Elhnafy'),
   status: 'active'
 },
+     'maro': {
+    name: 'مروان',
+    user: 'maro',
+    pass: hashPass('maro123'),
+    status: 'active'
+  },
 };
 
 /* ============================================================
