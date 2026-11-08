@@ -3,7 +3,7 @@
    ⚠️ مهم جداً: عند أي تعديل، غيّر APP_VERSION
    ============================================ */
 
-const APP_VERSION = '1.0.1';
+const APP_VERSION = '1.0.2';
 
 /* ---------- Hash ---------- */
 function hashPass(pass) {
@@ -27,12 +27,12 @@ const USERS = {
   pass: hashPass('Elhnafy'),
   status: 'active'
 },
-     'maro': {
-    name: 'مروان',
-    user: 'maro',
-    pass: hashPass('maro123'),
-    status: 'active'
-  },
+     'vann': {
+  name: 'Vann',
+  user: 'Vann',
+  pass: hashPass('vann1234'),
+  status: 'active'
+},
 };
 
 /* ============================================================
