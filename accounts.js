@@ -3,7 +3,7 @@
    ⚠️ مهم جداً: عند أي تعديل، غيّر APP_VERSION
    ============================================ */
 
-const APP_VERSION = '1';
+const APP_VERSION = '2';
 
 /* ---------- Hash ---------- */
 function hashPass(pass) {
