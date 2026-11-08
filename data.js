@@ -7,5 +7,19 @@ const TOOLS_DATA = [
 ];
 
 const DEFS_DATA = [
+     {
+    id: 'def-1794142566353',
+    name: 'USB-Samsung',
+    description: 'تعريفات اجهزة سامسونج',
+    image: 's.png',
+    link: '#'
+  },
+     {
+    id: 'def-1794143154731',
+    name: 'Qualcomm',
+    description: 'تعريفات معالجات كوالكم',
+    image: 'Q.png',
+    link: '#'
+  },
   // ← أضف تعريفاتك هنا
 ];
