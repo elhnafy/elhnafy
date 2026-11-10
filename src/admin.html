@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Elhnafy</title>
+<link rel="icon" href="favicon.ico" type="image/x-icon" sizes="48x48">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #04060d; --blue: #12203f; --blue-light: #1e3563;
+    --blue-accent: #3d5a9e; --blue-glow: #4a6fc4;
+    --red: #b32d22; --red-light: #e0392b;
+    --text: #eef2fa; --text-dim: #7d8bab; --text-soft: #a8b6d4;
+    --border: rgba(74,111,196,0.22); --green: #27ae60; --amber: #f39c12;
+  }
+  body {
+    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 900px 600px at 85% -5%, rgba(74,111,196,0.15), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 10% 110%, rgba(224,57,43,0.08), transparent 60%);
+    z-index: -1; pointer-events: none;
+  }
+  #loginScreen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  #loginScreen.hidden { display: none; }
+  .login-box {
+    width: 100%; max-width: 420px;
+    background: linear-gradient(165deg, rgba(18,32,63,0.98), rgba(8,15,34,0.99));
+    border: 1px solid var(--border); border-radius: 22px;
+    padding: 40px 30px 30px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.85);
+    position: relative;
+  }
+  .login-box::before {
+    content: ''; position: absolute;
+    top: 0; left: 10%; right: 10%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--blue-glow), transparent);
+  }
+  .login-icon {
+    width: 64px; height: 64px; margin: 0 auto 20px;
+    display: grid; place-items: center;
+    background: linear-gradient(145deg, var(--blue-light), var(--blue));
+    border-radius: 18px; border: 1px solid var(--border);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+  .login-icon svg { width: 30px; height: 30px; stroke: var(--blue-glow); }
+  .login-box h1 {
+    text-align: center; font-size: 1.6rem; font-weight: 900; margin-bottom: 8px;
+    background: linear-gradient(135deg, #fff, var(--blue-glow));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .login-box p { text-align: center; color: var(--text-dim); font-size: 0.85rem; margin-bottom: 26px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block; font-size: 0.78rem; font-weight: 800;
+    color: var(--text-soft); margin-bottom: 8px;
+  }
+  .form-group input, .form-group textarea {
+    width: 100%; font-family: inherit; font-size: 0.9rem; font-weight: 600;
+    color: var(--text); background: rgba(4,6,13,0.7);
+    border: 1.5px solid var(--border); border-radius: 11px;
+    padding: 12px 14px; transition: all 0.22s; outline: none;
+  }
+  .form-group textarea { min-height: 90px; resize: vertical; line-height: 1.6; }
+  .form-group input::placeholder, .form-group textarea::placeholder {
+    color: rgba(125,139,171,0.5); font-weight: 500;
+  }
+  .form-group input:focus, .form-group textarea:focus {
+    border-color: var(--blue-glow); background: rgba(4,6,13,0.9);
+    box-shadow: 0 0 0 3px rgba(74,111,196,0.15);
+  }
+  .btn-main {
+    width: 100%; font-family: inherit; font-weight: 800; font-size: 0.95rem;
+    padding: 14px; border-radius: 12px; border: none; cursor: pointer;
+    color: #fff;
+    background: linear-gradient(135deg, var(--blue-accent), var(--blue-light));
+    box-shadow: 0 8px 24px rgba(74,111,196,0.4);
+    transition: all 0.25s;
+  }
+  .btn-main:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(74,111,196,0.6); }
+  .error-msg {
+    background: rgba(224,57,43,0.12); border: 1px solid rgba(224,57,43,0.35);
+    color: #ff8a7a; padding: 10px 14px; border-radius: 9px;
+    font-size: 0.8rem; font-weight: 700; margin-bottom: 16px;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+
+  #dashboard {
+    display: none; max-width: 900px; margin: 0 auto;
+    padding: 30px 20px 60px;
+  }
+  #dashboard.show { display: block; }
+  .dash-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 30px; padding-bottom: 20px;
+    border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 12px;
+  }
+  .dash-header h1 {
+    font-size: 1.5rem; font-weight: 900;
+    background: linear-gradient(135deg, #fff, var(--blue-glow));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .logout-btn {
+    background: rgba(179,45,34,0.15); color: #ff8a7a;
+    border: 1px solid rgba(224,57,43,0.30);
+    padding: 9px 18px; border-radius: 10px;
+    font-family: inherit; font-weight: 800; font-size: 0.82rem;
+    cursor: pointer; transition: all 0.22s;
+  }
+  .logout-btn:hover { background: rgba(224,57,43,0.28); border-color: var(--red-light); }
+  .dash-tabs { display: flex; gap: 10px; margin-bottom: 26px; flex-wrap: wrap; }
+  .dash-tab {
+    cursor: pointer; font-family: inherit; font-weight: 800; font-size: 0.9rem;
+    padding: 12px 22px; border-radius: 12px;
+    background: rgba(18,32,63,0.45); color: var(--text-dim);
+    border: 1px solid var(--border); transition: all 0.28s;
+  }
+  .dash-tab:hover { color: var(--text); background: rgba(30,53,99,0.6); transform: translateY(-2px); }
+  .dash-tab.active {
+    background: linear-gradient(145deg, var(--blue-light), var(--blue));
+    color: #fff; border-color: var(--blue-glow);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 18px rgba(74,111,196,0.3);
+  }
+  .dash-section { display: none; }
+  .dash-section.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .section-card {
+    background: linear-gradient(160deg, rgba(18,32,63,0.55), rgba(8,15,34,0.85));
+    border: 1px solid var(--border); border-radius: 18px;
+    padding: 26px 24px; margin-bottom: 20px;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.4);
+  }
+  .section-card h2 {
+    font-size: 1.15rem; font-weight: 900; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px;
+    color: var(--text); flex-wrap: wrap;
+  }
+  .section-card h2 .badge {
+    background: linear-gradient(135deg, var(--red-light), var(--red));
+    color: #fff; font-size: 0.7rem; padding: 3px 10px;
+    border-radius: 20px; font-weight: 800;
+  }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 600px) { .row-2 { grid-template-columns: 1fr; } }
+  .btn-generate {
+    width: 100%; font-family: inherit; font-weight: 800; font-size: 0.92rem;
+    padding: 13px; border-radius: 11px; border: none; cursor: pointer;
+    color: #fff;
+    background: linear-gradient(135deg, var(--red-light), var(--red));
+    box-shadow: 0 8px 24px rgba(179,45,34,0.45);
+    transition: all 0.25s; margin-top: 8px;
+  }
+  .btn-generate:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(224,57,43,0.6); }
+  .code-box-wrap { margin-top: 18px; display: none; }
+  .code-box-wrap.show { display: block; }
+  .code-box-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px; gap: 10px; flex-wrap: wrap;
+  }
+  .code-box-header span { font-size: 0.8rem; font-weight: 800; color: var(--green); }
+  .copy-btn {
+    background: rgba(39,174,96,0.15); color: #6ee7a0;
+    border: 1px solid rgba(39,174,96,0.4);
+    padding: 7px 14px; border-radius: 8px;
+    font-family: inherit; font-weight: 800; font-size: 0.76rem;
+    cursor: pointer; transition: all 0.22s;
+  }
+  .copy-btn:hover { background: rgba(39,174,96,0.28); }
+  .copy-btn.copied { background: var(--green); color: #fff; }
+  .code-box {
+    background: #02040a; border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px;
+    font-family: 'Courier New', monospace; font-size: 0.82rem;
+    line-height: 1.7; color: #a8d4ff;
+    white-space: pre; overflow-x: auto;
+    direction: ltr; text-align: left;
+  }
+  .hint {
+    font-size: 0.78rem; color: var(--text-dim);
+    margin-top: 12px; line-height: 1.7; padding: 12px;
+    background: rgba(243,156,18,0.06);
+    border-right: 3px solid var(--amber);
+    border-radius: 8px;
+  }
+  .toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: rgba(8,15,34,0.97); color: #fff;
+    padding: 13px 24px; border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.75);
+    opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 999; font-weight: 700; font-size: 0.85rem;
+    max-width: calc(100vw - 32px); text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--green); }
+  .toast.error { border-color: var(--red-light); }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </div>
+    <h1>لوحة الأدمن</h1>
+    <p>Elhnafy — دخول المسؤول</p>
+    <div class="error-msg" id="loginError"></div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="adminUser">اسم المستخدم</label>
+        <input type="text" id="adminUser" placeholder="أدخل اسم المستخدم" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label for="adminPass">كلمة السر</label>
+        <input type="password" id="adminPass" placeholder="أدخل كلمة السر" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-main">دخول</button>
+    </form>
+  </div>
+</div>
+
+<div id="dashboard">
+  <div class="dash-header">
+    <h1>لوحة التحكم</h1>
+    <button class="logout-btn" id="logoutBtn">تسجيل الخروج</button>
+  </div>
+
+  <div class="dash-tabs">
+    <button class="dash-tab active" data-section="tools" type="button">🔧 الأدوات</button>
+    <button class="dash-tab" data-section="defs" type="button">📖 التعريفات</button>
+    <button class="dash-tab" data-section="users" type="button">👥 المستخدمين</button>
+  </div>
+
+  <div class="dash-section active" id="section-tools">
+    <div class="section-card">
+      <h2>إضافة أداة جديدة <span class="badge">TOOLS_DATA</span></h2>
+      <div class="form-group">
+        <label for="toolName">اسم الأداة</label>
+        <input type="text" id="toolName" placeholder="مثال: أداة تحويل الصور">
+      </div>
+      <div class="form-group">
+        <label for="toolDesc">الوصف</label>
+        <textarea id="toolDesc" placeholder="مثال: أداة لتحويل صيغ الصور بسرعة مع الحفاظ على الجودة."></textarea>
+      </div>
+      <div class="row-2">
+        <div class="form-group">
+          <label for="toolImage">رابط الصورة</label>
+          <input type="text" id="toolImage" placeholder="https://example.com/image.jpg">
+        </div>
+        <div class="form-group">
+          <label for="toolLink">رابط الأداة</label>
+          <input type="text" id="toolLink" placeholder="https://example.com/tool">
+        </div>
+      </div>
+      <button class="btn-generate" id="genToolBtn" type="button">⚡ توليد الكود</button>
+      <div class="code-box-wrap" id="toolCodeWrap">
+        <div class="code-box-header">
+          <span>✅ الكود جاهز — انسخه في data.js</span>
+          <button class="copy-btn" data-target="toolCode" type="button">📋 نسخ</button>
+        </div>
+        <div class="code-box" id="toolCode"></div>
+        <div class="hint">
+          افتح ملف <strong>data.js</strong> ← ابحث عن <strong>TOOLS_DATA = [</strong> ← الصق الكود قبل <strong>];</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-section" id="section-defs">
+    <div class="section-card">
+      <h2>إضافة تعريف جديد <span class="badge">DEFS_DATA</span></h2>
+      <div class="form-group">
+        <label for="defName">اسم التعريف</label>
+        <input type="text" id="defName" placeholder="مثال: ما هو HTML؟">
+      </div>
+      <div class="form-group">
+        <label for="defDesc">الوصف</label>
+        <textarea id="defDesc" placeholder="مثال: لغة ترميز النص التشعبي، الأساس لبناء صفحات الويب."></textarea>
+      </div>
+      <div class="row-2">
+        <div class="form-group">
+          <label for="defImage">رابط الصورة</label>
+          <input type="text" id="defImage" placeholder="https://example.com/image.jpg">
+        </div>
+        <div class="form-group">
+          <label for="defLink">رابط التعريف</label>
+          <input type="text" id="defLink" placeholder="https://example.com/def">
+        </div>
+      </div>
+      <button class="btn-generate" id="genDefBtn" type="button">⚡ توليد الكود</button>
+      <div class="code-box-wrap" id="defCodeWrap">
+        <div class="code-box-header">
+          <span>✅ الكود جاهز — انسخه في data.js</span>
+          <button class="copy-btn" data-target="defCode" type="button">📋 نسخ</button>
+        </div>
+        <div class="code-box" id="defCode"></div>
+        <div class="hint">
+          افتح ملف <strong>data.js</strong> ← ابحث عن <strong>DEFS_DATA = [</strong> ← الصق الكود قبل <strong>];</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-section" id="section-users">
+    <div class="section-card">
+      <h2>إضافة مستخدم جديد <span class="badge">USERS</span></h2>
+      <div class="form-group">
+        <label for="userName">الاسم الكامل</label>
+        <input type="text" id="userName" placeholder="مثال: أحمد محمد">
+      </div>
+      <div class="row-2">
+        <div class="form-group">
+          <label for="userUsername">اسم المستخدم</label>
+          <input type="text" id="userUsername" placeholder="مثال: ahmed">
+        </div>
+        <div class="form-group">
+          <label for="userPass">كلمة السر</label>
+          <input type="text" id="userPass" placeholder="مثال: ahmed123">
+        </div>
+      </div>
+      <button class="btn-generate" id="genUserBtn" type="button">⚡ توليد الكود</button>
+      <div class="code-box-wrap" id="userCodeWrap">
+        <div class="code-box-header">
+          <span>✅ الكود جاهز — انسخه في accounts.js</span>
+          <button class="copy-btn" data-target="userCode" type="button">📋 نسخ</button>
+        </div>
+        <div class="code-box" id="userCode"></div>
+        <div class="hint">
+          افتح ملف <strong>accounts.js</strong> ← ابحث عن <strong>USERS = {</strong> ← الصق الكود قبل <strong>};</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ADMIN_USER = 'Elhnafy';
+const ADMIN_PASS = '00000000';
+const ADMIN_SESSION_KEY = 'elhnafy_admin_session';
+const ADMIN_COOKIE_NAME = 'elhnafy_admin_session';
+const ADMIN_COOKIE_DAYS = 7;
+
+function setAdminCookie(value, days = ADMIN_COOKIE_DAYS) {
+  const d = new Date();
+  d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = ADMIN_COOKIE_NAME + '=' + encodeURIComponent(value) +
+    ';expires=' + d.toUTCString() + ';path=/;SameSite=Lax';
+}
+function getAdminCookie() {
+  const m = document.cookie.match('(^|;)\\s*' + ADMIN_COOKIE_NAME + '\\s*=\\s*([^;]+)');
+  return m ? decodeURIComponent(m.pop()) : null;
+}
+function deleteAdminCookie() {
+  document.cookie = ADMIN_COOKIE_NAME + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax';
+}
+function isAdminLoggedIn() {
+  return getAdminCookie() === '1' || sessionStorage.getItem(ADMIN_SESSION_KEY) === '1';
+}
+
+const loginScreen = document.getElementById('loginScreen');
+const dashboard = document.getElementById('dashboard');
+const loginForm = document.getElementById('loginForm');
+const loginError = document.getElementById('loginError');
+const logoutBtn = document.getElementById('logoutBtn');
+const toast = document.getElementById('toast');
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function escapeJs(str) {
+  return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+function showToast(msg, type = 'success') {
+  toast.textContent = msg;
+  toast.classList.remove('success', 'error');
+  toast.classList.add(type);
+  toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+function copyToClipboard(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ تم النسخ';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = '✓ تم النسخ';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 نسخ'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+loginForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const user = document.getElementById('adminUser').value.trim();
+  const pass = document.getElementById('adminPass').value;
+  if (user === ADMIN_USER && pass === ADMIN_PASS) {
+    setAdminCookie('1');
+    sessionStorage.setItem(ADMIN_SESSION_KEY, '1');
+    loginError.classList.remove('show');
+    showDashboard();
+    showToast('✅ تم تسجيل الدخول — ستبقى مسجلاً لمدة ' + ADMIN_COOKIE_DAYS + ' أيام');
+  } else {
+    loginError.textContent = '❌ اسم المستخدم أو كلمة السر غير صحيحة';
+    loginError.classList.add('show');
+  }
+});
+
+function showDashboard() {
+  loginScreen.classList.add('hidden');
+  dashboard.classList.add('show');
+}
+function showLogin() {
+  dashboard.classList.remove('show');
+  loginScreen.classList.remove('hidden');
+  loginForm.reset();
+  loginError.classList.remove('show');
+}
+
+logoutBtn.addEventListener('click', () => {
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  deleteAdminCookie();
+  showLogin();
+  showToast('👋 تم تسجيل الخروج بنجاح');
+});
+
+if (isAdminLoggedIn()) showDashboard();
+
+document.querySelectorAll('.dash-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.dash-section').forEach(s => s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('section-' + tab.dataset.section).classList.add('active');
+  });
+});
+
+document.getElementById('genToolBtn').addEventListener('click', () => {
+  const name = document.getElementById('toolName').value.trim();
+  const desc = document.getElementById('toolDesc').value.trim();
+  const image = document.getElementById('toolImage').value.trim();
+  const link = document.getElementById('toolLink').value.trim();
+  if (!name) return showToast('❌ يرجى إدخال اسم الأداة', 'error');
+  if (!desc) return showToast('❌ يرجى إدخال وصف الأداة', 'error');
+  const id = 'tool-' + Date.now();
+  const code = "  {\n    id: '" + escapeJs(id) + "',\n    name: '" + escapeJs(name) + "',\n    description: '" + escapeJs(desc) + "',\n    image: '" + escapeJs(image) + "',\n    link: '" + escapeJs(link) + "'\n  },";
+  document.getElementById('toolCode').textContent = code;
+  document.getElementById('toolCodeWrap').classList.add('show');
+  showToast('✅ تم توليد كود الأداة');
+});
+
+document.getElementById('genDefBtn').addEventListener('click', () => {
+  const name = document.getElementById('defName').value.trim();
+  const desc = document.getElementById('defDesc').value.trim();
+  const image = document.getElementById('defImage').value.trim();
+  const link = document.getElementById('defLink').value.trim();
+  if (!name) return showToast('❌ يرجى إدخال اسم التعريف', 'error');
+  if (!desc) return showToast('❌ يرجى إدخال وصف التعريف', 'error');
+  const id = 'def-' + Date.now();
+  const code = "  {\n    id: '" + escapeJs(id) + "',\n    name: '" + escapeJs(name) + "',\n    description: '" + escapeJs(desc) + "',\n    image: '" + escapeJs(image) + "',\n    link: '" + escapeJs(link) + "'\n  },";
+  document.getElementById('defCode').textContent = code;
+  document.getElementById('defCodeWrap').classList.add('show');
+  showToast('✅ تم توليد كود التعريف');
+});
+
+document.getElementById('genUserBtn').addEventListener('click', () => {
+  const name = document.getElementById('userName').value.trim();
+  const username = document.getElementById('userUsername').value.trim();
+  const pass = document.getElementById('userPass').value.trim();
+  if (!name) return showToast('❌ يرجى إدخال الاسم', 'error');
+  if (!username) return showToast('❌ يرجى إدخال اسم المستخدم', 'error');
+  if (!pass) return showToast('❌ يرجى إدخال كلمة السر', 'error');
+  const key = username.toLowerCase();
+  const code = "  '" + escapeJs(key) + "': {\n    name: '" + escapeJs(name) + "',\n    user: '" + escapeJs(username) + "',\n    pass: hashPass('" + escapeJs(pass) + "'),\n    status: 'active'\n  },";
+  document.getElementById('userCode').textContent = code;
+  document.getElementById('userCodeWrap').classList.add('show');
+  showToast('✅ تم توليد كود المستخدم');
+});
+
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const el = document.getElementById(btn.dataset.target);
+    if (!el.textContent) return;
+    copyToClipboard(el.textContent, btn);
+  });
+});
+</script>
+</body>
+</html>
